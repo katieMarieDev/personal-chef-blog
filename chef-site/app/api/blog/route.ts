@@ -1,1 +1,0 @@
-// GET all posts / POST new post (admin)

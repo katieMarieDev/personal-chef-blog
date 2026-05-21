@@ -1,1 +1,0 @@
-// GET/PATCH/DELETE one recipe

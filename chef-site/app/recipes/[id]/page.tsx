@@ -1,1 +1,0 @@
-// Public recipe detail

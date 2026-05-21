@@ -1,1 +1,0 @@
-// GET one post / PATCH/DELETE (admin)

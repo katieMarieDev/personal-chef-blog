@@ -285,7 +285,7 @@ git config user.email "<your personal email>"
 - `params` in route handlers is a Promise in Next.js 16 — must `await params`
 - Supabase service role key bypasses RLS — always filter manually
 - Env vars need full `npm run dev` restart to take effect
-- `APP_BASE_URL` must include `https://` in production for Auth0 session cookies to work
+
 
 ---
 
