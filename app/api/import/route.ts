@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isAdmin } from "@/lib/admin";
 import { auth0 } from "@/lib/auth0";
 import { getSupabaseAdminClient } from "@/lib/supabase-server";
 
@@ -78,7 +79,7 @@ async function uploadDataUrlToStorage(dataUrl: string): Promise<string> {
 
 export async function POST(req: Request) {
 	const session = await auth0.getSession();
-	if (!session) {
+	if (!isAdmin(session)) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 

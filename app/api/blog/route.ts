@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isAdmin } from "@/lib/admin";
 import { auth0 } from "@/lib/auth0";
 import { ensureUniqueBlogSlug, getBlogPosts } from "@/lib/content";
 import { getSupabaseAdminClient } from "@/lib/supabase-server";
@@ -49,14 +50,14 @@ async function uploadBlogImageIfNeeded(heroImageUrl?: string): Promise<string | 
 
 export async function GET() {
 	const session = await auth0.getSession();
-	const posts = await getBlogPosts({ includeUnpublished: !!session });
+	const posts = await getBlogPosts({ includeUnpublished: isAdmin(session) });
 
 	return NextResponse.json({ ok: true, posts });
 }
 
 export async function POST(req: Request) {
 	const session = await auth0.getSession();
-	if (!session) {
+	if (!isAdmin(session)) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 

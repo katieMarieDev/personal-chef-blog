@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isAdmin } from "@/lib/admin";
 import { auth0 } from "@/lib/auth0";
 import { ensureUniqueBlogSlug, getBlogPostBySlug } from "@/lib/content";
 import { getSupabaseAdminClient } from "@/lib/supabase-server";
@@ -57,7 +58,9 @@ export async function GET(
 ) {
 	const { slug } = await params;
 	const session = await auth0.getSession();
-	const post = await getBlogPostBySlug(slug, { includeUnpublished: !!session });
+	const post = await getBlogPostBySlug(slug, {
+		includeUnpublished: isAdmin(session),
+	});
 
 	if (!post) {
 		return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -72,7 +75,7 @@ export async function PATCH(
 ) {
 	const { slug } = await params;
 	const session = await auth0.getSession();
-	if (!session) {
+	if (!isAdmin(session)) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
@@ -153,7 +156,7 @@ export async function DELETE(
 ) {
 	const { slug } = await params;
 	const session = await auth0.getSession();
-	if (!session) {
+	if (!isAdmin(session)) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 

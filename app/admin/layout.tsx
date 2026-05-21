@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { isAdmin } from "@/lib/admin";
 import { auth0 } from "@/lib/auth0";
 
 export default async function AdminLayout({
@@ -11,6 +12,10 @@ export default async function AdminLayout({
 
 	if (!session) {
 		redirect("/auth/login?returnTo=/admin");
+	}
+
+	if (!isAdmin(session)) {
+		redirect("/");
 	}
 
 	return children;

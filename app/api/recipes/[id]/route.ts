@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isAdmin } from "@/lib/admin";
 import { auth0 } from "@/lib/auth0";
 import { getRecipeById } from "@/lib/content";
 
@@ -9,7 +10,7 @@ export async function GET(
 ) {
 	const { id } = await params;
 	const session = await auth0.getSession();
-	const recipe = await getRecipeById(id, !!session);
+	const recipe = await getRecipeById(id, isAdmin(session));
 
 	if (!recipe) {
 		return NextResponse.json({ error: "Not found" }, { status: 404 });
