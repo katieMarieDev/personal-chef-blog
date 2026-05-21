@@ -1,8 +1,8 @@
 import RecipeGrid from "@/components/RecipeGrid";
-import { recipes } from "@/lib/mock-data";
+import { getRecipes } from "@/lib/content";
 
-export default function RecipesPage() {
-	const publicRecipes = recipes.filter((recipe) => recipe.isPublic);
+export default async function RecipesPage() {
+	const publicRecipes = await getRecipes(false);
 
 	return (
 		<main className="space-y-6">

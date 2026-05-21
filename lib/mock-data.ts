@@ -96,6 +96,7 @@ export const blogPosts: BlogPost[] = [
 		heroImageUrl:
 			"https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1200&q=80",
 		publishedAt: "2026-05-18",
+		isPublished: true,
 	},
 	{
 		id: "2",
@@ -105,6 +106,7 @@ export const blogPosts: BlogPost[] = [
 			"My practical process for balancing prep time, seasonality, and family requests.",
 		body: "I start with one anchor dish, then build complementary meals that re-use prep smartly. A roast on Monday becomes wraps on Tuesday and stock by Wednesday.",
 		publishedAt: "2026-05-20",
+		isPublished: true,
 	},
 ];
 

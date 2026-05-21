@@ -28,5 +28,6 @@ export type BlogPost = {
 	excerpt: string;
 	body: string;
 	heroImageUrl?: string;
-	publishedAt: string;
+	publishedAt?: string | null;
+	isPublished: boolean;
 };

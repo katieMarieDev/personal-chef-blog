@@ -1,8 +1,26 @@
+import { notFound } from "next/navigation";
+
+import BlogPost from "@/components/BlogPost";
+import { isAdmin } from "@/lib/admin";
+import { auth0 } from "@/lib/auth0";
+import { getBlogPostBySlug } from "@/lib/content";
+
 export default async function BlogPostPage({
 	params,
 }: {
 	params: Promise<{ slug: string }>;
 }) {
 	const { slug } = await params;
-	return <main style={{ padding: "2rem" }}>Blog post: {slug}</main>;
+	const session = await auth0.getSession();
+	const post = await getBlogPostBySlug(slug, { includeUnpublished: isAdmin(session) });
+
+	if (!post) {
+		notFound();
+	}
+
+	return (
+		<main className="space-y-10">
+			<BlogPost post={post} isAdmin={isAdmin(session)} />
+		</main>
+	);
 }

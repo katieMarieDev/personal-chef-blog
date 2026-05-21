@@ -1,11 +1,13 @@
 import Link from "next/link";
 
 import RecipeCard from "@/components/RecipeCard";
-import { getFeaturedPost, getFeaturedRecipes } from "@/lib/mock-data";
+import { getFeaturedPost, getFeaturedRecipes } from "@/lib/content";
 
-export default function HomePage() {
-	const featuredRecipes = getFeaturedRecipes();
-	const featuredPost = getFeaturedPost();
+export default async function HomePage() {
+	const [featuredRecipes, featuredPost] = await Promise.all([
+		getFeaturedRecipes(),
+		getFeaturedPost(),
+	]);
 
 	return (
 		<main className="space-y-14 md:space-y-20">

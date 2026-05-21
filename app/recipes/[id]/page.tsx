@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import RecipeDetail from "@/components/RecipeDetail";
 import { isAdmin } from "@/lib/admin";
 import { auth0 } from "@/lib/auth0";
-import { findRecipeById } from "@/lib/mock-data";
+import { getRecipeById } from "@/lib/content";
 
 export default async function RecipeDetailPage({
 	params,
@@ -11,13 +11,12 @@ export default async function RecipeDetailPage({
 	params: Promise<{ id: string }>;
 }) {
 	const { id } = await params;
-	const recipe = findRecipeById(id);
+	const session = await auth0.getSession();
+	const recipe = await getRecipeById(id, isAdmin(session));
 
 	if (!recipe) {
 		notFound();
 	}
-
-	const session = await auth0.getSession();
 
 	return <RecipeDetail recipe={recipe} isAdmin={isAdmin(session)} />;
 }
