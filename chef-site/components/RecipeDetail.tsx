@@ -1,0 +1,1 @@
+// Recipe detail — edit controls shown only when admin

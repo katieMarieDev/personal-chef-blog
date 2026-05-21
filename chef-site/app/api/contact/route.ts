@@ -1,0 +1,1 @@
+// POST — send inquiry email via Resend

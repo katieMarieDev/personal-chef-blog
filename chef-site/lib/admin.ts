@@ -1,0 +1,1 @@
+// Helper: isAdmin(session) — checks session exists

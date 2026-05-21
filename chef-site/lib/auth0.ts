@@ -1,0 +1,1 @@
+// Auth0 client singleton
