@@ -20,7 +20,7 @@ export default async function BlogPostPage({
 
 	return (
 		<main className="space-y-10">
-			<BlogPost post={post} isAdmin={isAdmin(session)} />
+			<BlogPost post={post} />
 		</main>
 	);
 }
