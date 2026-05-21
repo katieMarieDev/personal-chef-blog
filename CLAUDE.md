@@ -284,7 +284,7 @@ git config user.email "<your personal email>"
 - Never `<Link>` for logout — use `<a>` (Next.js prefetch silently logs user out)
 - `params` in route handlers is a Promise in Next.js 16 — must `await params`
 - Supabase service role key bypasses RLS — always filter manually
-- Env vars need full `npm run dev` restart to take effect
+
 
 
 ---
