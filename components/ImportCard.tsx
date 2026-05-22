@@ -20,15 +20,16 @@ export default function ImportCard() {
 			});
 
 			if (!response.ok) {
-				throw new Error("Import failed");
+				const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+				throw new Error(errorPayload?.error || "Import failed");
 			}
 
 			const payload = (await response.json()) as { recipe?: { title: string } };
 
 			setStatus(`Imported "${payload.recipe?.title ?? "recipe"}" as a private draft.`);
 			event.currentTarget.reset();
-		} catch {
-			setStatus("Could not import right now.");
+		} catch (error) {
+			setStatus(error instanceof Error ? error.message : "Could not import right now.");
 		}
 	}
 

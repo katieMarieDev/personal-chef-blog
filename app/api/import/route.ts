@@ -16,50 +16,34 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 //   6. If user uploaded a photo, upload to Supabase Storage
 //   7. Return { recipeId } to client
 //
-// Import modes:
-//   url only       → fetch og:image, Claude parses URL content
-//   text only      → Claude parses pasted text
-//   file (PDF/img) → Claude reads as base64 document/image
-//   url + text     → URL for attribution, text for content (paywalled sites)
-// ============================================================
-
-export const maxDuration = 60;
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
-const RECIPE_PROMPT = `Extract the recipe from the provided content and return ONLY a JSON object with these fields:
-- title (string)
-- source (string, domain or publication name)
-- cook_time (string like "30 min")
-- prep_time (string like "15 min")
-- servings (number)
-- meal_type (one of: breakfast, lunch, dinner, dessert, snack)
-- ingredients (array of {qty: string, unit: string, name: string})
-- steps (array of strings)
-- tags (array of 2-4 strings from: weeknight, quick, vegetarian, vegan, comfort food, italian, salad, side, breakfast, pasta, roasted, soup, baking, meal prep, seafood, chicken, beef)
-
-IMPORTANT:
-- List every ingredient exactly as written, including uncommon, optional, or ambiguous ones. Do NOT substitute, omit, or normalize any ingredient.
-- If an ingredient is written as “X or Y”, include it as-is.
-- Do not change ingredient names to more common ones.
-- If you are unsure, copy the ingredient text exactly.
-- If URL page text is provided, prioritize the ingredient and instruction block in the main article content and ignore navigation, related posts, product grids, and footers.
-- If multiple ingredient lists appear, choose the one nearest the recipe title and immediately followed by the recipe method/instructions.
-- Return only valid JSON, no markdown, no explanation.`;
-
-function decodeHtmlEntities(input: string): string {
-  return input
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&frac14;/gi, "1/4")
-    .replace(/&frac12;/gi, "1/2")
-    .replace(/&frac34;/gi, "3/4");
+export async function POST(request: NextRequest) {
+  try {
+    // ...existing code for import logic...
+    // (move all your import logic here, including the try block contents)
+  } catch (error) {
+    let message = "Unexpected import error";
+    if (error instanceof Error) {
+      message = error.message;
+      // Anthropic API errors often have a response property
+      if ((error as any).response) {
+        try {
+          const resp = (error as any).response;
+          if (typeof resp === "object" && resp !== null) {
+            if (resp.data && typeof resp.data === "object" && resp.data.error) {
+              message += `: ${resp.data.error}`;
+            } else if (resp.statusText) {
+              message += `: ${resp.statusText}`;
+            }
+          }
+        } catch {}
+      }
+    }
+    console.error("Import error:", error);
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
+  }
 }
 
 function htmlToText(html: string): string {
