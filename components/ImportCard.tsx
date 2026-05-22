@@ -1,8 +1,23 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
+function fileToBase64(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			const result = String(reader.result ?? "");
+			const payload = result.split(",")[1] || "";
+			resolve(payload);
+		};
+		reader.onerror = () => reject(new Error("Unable to read image file."));
+		reader.readAsDataURL(file);
+	});
+}
 
 export default function ImportCard() {
+	const router = useRouter();
 	const [mode, setMode] = useState<"url" | "text">("url");
 	const [status, setStatus] = useState("");
 
@@ -10,13 +25,30 @@ export default function ImportCard() {
 		event.preventDefault();
 		setStatus("Importing recipe...");
 
-		const formData = new FormData(event.currentTarget);
-		formData.set("mode", mode);
+		const form = event.currentTarget;
+		const formData = new FormData(form);
+		const url = mode === "url" ? (formData.get("sourceUrl") as string) : undefined;
+		const text = mode === "text" ? (formData.get("recipeText") as string) : undefined;
+		const imageFile = formData.get("recipeImage") as File | null;
+
+		// Read image file as base64 if provided
+		let fileBase64: string | undefined;
+		let fileMediaType: string | undefined;
+		if (imageFile && imageFile.size > 0) {
+			fileBase64 = await fileToBase64(imageFile);
+			fileMediaType = imageFile.type;
+		}
+
+		const body: Record<string, unknown> = {};
+		if (url) body.url = url;
+		if (text) body.text = text;
+		if (fileBase64) { body.fileBase64 = fileBase64; body.fileMediaType = fileMediaType; }
 
 		try {
 			const response = await fetch("/api/import", {
 				method: "POST",
-				body: formData,
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
 			});
 
 			if (!response.ok) {
@@ -24,10 +56,11 @@ export default function ImportCard() {
 				throw new Error(errorPayload?.error || "Import failed");
 			}
 
-			const payload = (await response.json()) as { recipe?: { title: string } };
+			await response.json(); // recipeId available if needed
 
-			setStatus(`Imported "${payload.recipe?.title ?? "recipe"}" as a private draft.`);
-			event.currentTarget.reset();
+			setStatus(`Recipe imported as a private draft.`);
+			form.reset();
+			router.refresh();
 		} catch (error) {
 			setStatus(error instanceof Error ? error.message : "Could not import right now.");
 		}
@@ -80,6 +113,7 @@ export default function ImportCard() {
 					/>
 				)}
 
+				<label className="block text-sm text-[--color-muted]">Optional hero image</label>
 				<input
 					name="recipeImage"
 					type="file"

@@ -1,5 +1,5 @@
 import type { BlogPost, Ingredient, Recipe } from "@/lib/types";
-import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { getSupabaseServerClient, getSupabaseAdminClient } from "@/lib/supabase-server";
 
 const PLACEHOLDER_RECIPE_IMAGE =
 	"https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=1200&q=80";
@@ -196,7 +196,7 @@ export async function getFeaturedPost(): Promise<BlogPost | undefined> {
 }
 
 export async function getRecipes(includePrivate: boolean): Promise<Recipe[]> {
-	const supabase = getSupabaseServerClient();
+	const supabase = includePrivate ? getSupabaseAdminClient() : getSupabaseServerClient();
 	let recipeQuery = supabase
 		.from("recipes")
 		.select(
@@ -269,7 +269,7 @@ export async function getRecipeById(
 	id: string,
 	includePrivate: boolean,
 ): Promise<Recipe | undefined> {
-	const supabase = getSupabaseServerClient();
+	const supabase = includePrivate ? getSupabaseAdminClient() : getSupabaseServerClient();
 	let recipeQuery = supabase
 		.from("recipes")
 		.select(

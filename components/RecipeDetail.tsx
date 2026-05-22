@@ -11,7 +11,7 @@ type RecipeDetailProps = {
 export default function RecipeDetail({ recipe, isAdmin }: RecipeDetailProps) {
 	const editButton = isAdmin ? (
 		<Link
-			href={`/admin?editRecipe=${recipe.id}`}
+			href={`/admin/recipes/${recipe.id}/edit`}
 			className="rounded-full border border-[--color-border] px-4 py-2 text-sm text-[--color-ink] hover:border-[--color-accent]"
 		>
 			Edit Recipe
@@ -21,7 +21,9 @@ export default function RecipeDetail({ recipe, isAdmin }: RecipeDetailProps) {
 	return (
 		<article className="mx-auto max-w-4xl space-y-8">
 			<div className="space-y-4">
-				<p className="text-xs uppercase tracking-[0.2em] text-[--color-muted]">{recipe.mealType}</p>
+				<p className="text-xs uppercase tracking-[0.2em] text-[--color-muted]">
+					Featured Tags: {recipe.tags.length > 0 ? recipe.tags.join(", ") : "none"}
+				</p>
 				<h1 className="font-serif text-4xl text-[--color-ink] md:text-5xl">{recipe.title}</h1>
 				<p className="text-[--color-muted]">{recipe.excerpt}</p>
 			</div>

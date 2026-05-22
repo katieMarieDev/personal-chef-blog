@@ -2,48 +2,43 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { auth0 } from "@/lib/auth0";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 // ============================================================
-// Mise — Import API Route
-// POST /api/import
-//
-// Accepts: url, text, source, fileBase64 + fileMediaType (any combination)
-// Flow:
-//   1. Check auth (Auth0 session required)
-//   2. Build Claude message from whatever input was provided
-//   3. Call Claude to extract structured recipe JSON
-//   4. If URL provided, fetch og:image for hero photo
-//   5. Save recipe + ingredients + tags to Supabase
-//   6. If user uploaded a photo, upload to Supabase Storage
-//   7. Return { recipeId } to client
-//
-export async function POST(request: NextRequest) {
-  try {
-    // ...existing code for import logic...
-    // (move all your import logic here, including the try block contents)
-  } catch (error) {
-    let message = "Unexpected import error";
-    if (error instanceof Error) {
-      message = error.message;
-      // Anthropic API errors often have a response property
-      if ((error as any).response) {
-        try {
-          const resp = (error as any).response;
-          if (typeof resp === "object" && resp !== null) {
-            if (resp.data && typeof resp.data === "object" && resp.data.error) {
-              message += `: ${resp.data.error}`;
-            } else if (resp.statusText) {
-              message += `: ${resp.statusText}`;
-            }
-          }
-        } catch {}
-      }
-    }
-    console.error("Import error:", error);
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
-  }
+
+export const maxDuration = 60;
+
+const RECIPE_PROMPT = `Extract the recipe from the provided content and return ONLY a JSON object with these fields:
+- title (string)
+- source (string, domain or publication name)
+- cook_time (string like "30 min")
+- prep_time (string like "15 min")
+- servings (number)
+- meal_type (one of: breakfast, lunch, dinner, dessert, snack)
+- ingredients (array of {qty: string, unit: string, name: string})
+- steps (array of strings)
+- tags (array of 2-4 strings from: weeknight, quick, vegetarian, vegan, comfort food, italian, salad, side, breakfast, pasta, roasted, soup, baking, meal prep, seafood, chicken, beef)
+
+IMPORTANT:
+- List every ingredient exactly as written, including uncommon, optional, or ambiguous ones. Do NOT substitute, omit, or normalize any ingredient.
+- If an ingredient is written as “X or Y”, include it as-is.
+- Do not change ingredient names to more common ones.
+- If you are unsure, copy the ingredient text exactly.
+- If URL page text is provided, prioritize the ingredient and instruction block in the main article content and ignore navigation, related posts, product grids, and footers.
+- If multiple ingredient lists appear, choose the one nearest the recipe title and immediately followed by the recipe method/instructions.
+- Return only valid JSON, no markdown, no explanation.`;
+
+function decodeHtmlEntities(input: string): string {
+  return input
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&frac14;/gi, "1/4")
+    .replace(/&frac12;/gi, "1/2")
+    .replace(/&frac34;/gi, "3/4");
 }
 
 function htmlToText(html: string): string {
@@ -264,7 +259,6 @@ export async function POST(request: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = session.user.sub;
 
   // Get request body
   const body = await request.json();
@@ -304,7 +298,12 @@ export async function POST(request: NextRequest) {
             },
         {
           type: "text" as const,
-          text: RECIPE_PROMPT + (url ? `\n\nSource URL: ${url}` : ""),
+          text:
+            RECIPE_PROMPT +
+            (url ? `\n\nSource URL: ${url}` : "") +
+            (text
+              ? `\n\nUser-provided content (use this as source of truth if it conflicts with the image):\n${text}`
+              : ""),
         },
       ];
     } else {
@@ -349,7 +348,7 @@ export async function POST(request: NextRequest) {
     // Save to Supabase
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY!
     );
 
     let existingRecipe: { id: string; source: string; hero_image_url: string | null } | null = null;
@@ -358,7 +357,6 @@ export async function POST(request: NextRequest) {
         .from("recipes")
         .select("id, source, hero_image_url")
         .eq("id", overwriteRecipeId)
-        .eq("user_id", userId)
         .single();
 
       if (!data) {
@@ -410,15 +408,12 @@ export async function POST(request: NextRequest) {
           .from("recipes")
           .update(baseRecipePayload)
           .eq("id", overwriteRecipeId)
-          .eq("user_id", userId)
           .select()
           .single()
       : supabase
           .from("recipes")
-          .insert({
-            user_id: userId,
-            ...baseRecipePayload,
-          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .insert({ ...baseRecipePayload } as any)
           .select()
           .single();
 
@@ -482,7 +477,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Import error:", error);
     return NextResponse.json(
-      { error: "Failed to import recipe" },
+      { error: error instanceof Error ? error.message : "Failed to import recipe" },
       { status: 500 }
     );
   }
