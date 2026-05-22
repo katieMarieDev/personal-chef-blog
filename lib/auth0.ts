@@ -12,7 +12,7 @@ export const auth0 = new Auth0Client({
 	secret: process.env.CHEF_AUTH0_SECRET ?? process.env.AUTH0_SECRET,
 	appBaseUrl,
 	authorizationParameters: {
-		scope: "openid profile email",
+		scope: "openid email",
 	},
 });
 

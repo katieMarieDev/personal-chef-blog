@@ -5,6 +5,22 @@ import { auth0 } from "@/lib/auth0";
 import { ensureUniqueBlogSlug, getBlogPosts } from "@/lib/content";
 import { getSupabaseAdminClient } from "@/lib/supabase-server";
 
+function toApiError(error: unknown): { message: string; status: number } {
+	if (!(error instanceof Error)) {
+		return { message: "Unexpected error creating post", status: 500 };
+	}
+
+	if (error.message.toLowerCase().includes("invalid compact jws")) {
+		return {
+			message:
+				"Session could not be verified. Please log out and log in again.",
+			status: 401,
+		};
+	}
+
+	return { message: error.message, status: 500 };
+}
+
 function excerptFromBody(body: string, maxLength = 160): string {
 	const text = body.replace(/\s+/g, " ").trim();
 	if (text.length <= maxLength) {
@@ -113,9 +129,10 @@ export async function POST(req: Request) {
 
 		return NextResponse.json({ ok: true, post }, { status: 201 });
 	} catch (error) {
+		const apiError = toApiError(error);
 		return NextResponse.json(
-			{ error: error instanceof Error ? error.message : "Unexpected error creating post" },
-			{ status: 500 },
+			{ error: apiError.message },
+			{ status: apiError.status },
 		);
 	}
 }

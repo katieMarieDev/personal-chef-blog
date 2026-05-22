@@ -26,7 +26,7 @@ export default function BlogEditorForm({ initialPost, mode }: BlogEditorFormProp
 	const [excerpt, setExcerpt] = useState(initialPost?.excerpt ?? "");
 	const [body, setBody] = useState(initialPost?.body ?? "");
 	const [heroImageUrl, setHeroImageUrl] = useState(initialPost?.heroImageUrl ?? "");
-	const [isPublished, setIsPublished] = useState(initialPost?.isPublished ?? true);
+	const [isPublished, setIsPublished] = useState(initialPost?.isPublished ?? false);
 	const [savedSlug, setSavedSlug] = useState(initialPost?.slug ?? "");
 	const [message, setMessage] = useState("");
 	const [runningAction, setRunningAction] = useState<
@@ -255,7 +255,7 @@ export default function BlogEditorForm({ initialPost, mode }: BlogEditorFormProp
 							? "Publishing..."
 							: isPublished
 								? "Update Published"
-								: "Publish"}
+								: "Publish Live"}
 					</button>
 					{mode === "edit" && isPublished ? (
 						<button

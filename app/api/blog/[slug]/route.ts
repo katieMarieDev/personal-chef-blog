@@ -5,6 +5,22 @@ import { auth0 } from "@/lib/auth0";
 import { ensureUniqueBlogSlug, getBlogPostBySlug } from "@/lib/content";
 import { getSupabaseAdminClient } from "@/lib/supabase-server";
 
+function toApiError(error: unknown, fallback: string): { message: string; status: number } {
+	if (!(error instanceof Error)) {
+		return { message: fallback, status: 500 };
+	}
+
+	if (error.message.toLowerCase().includes("invalid compact jws")) {
+		return {
+			message:
+				"Session could not be verified. Please log out and log in again.",
+			status: 401,
+		};
+	}
+
+	return { message: error.message, status: 500 };
+}
+
 function excerptFromBody(body: string, maxLength = 160): string {
 	const text = body.replace(/\s+/g, " ").trim();
 	if (text.length <= maxLength) {
@@ -150,9 +166,10 @@ export async function PATCH(
 
 		return NextResponse.json({ ok: true, post });
 	} catch (error) {
+		const apiError = toApiError(error, "Unexpected error updating post");
 		return NextResponse.json(
-			{ error: error instanceof Error ? error.message : "Unexpected error updating post" },
-			{ status: 500 },
+			{ error: apiError.message },
+			{ status: apiError.status },
 		);
 	}
 }
@@ -184,9 +201,10 @@ export async function DELETE(
 
 		return NextResponse.json({ ok: true });
 	} catch (error) {
+		const apiError = toApiError(error, "Unexpected error deleting post");
 		return NextResponse.json(
-			{ error: error instanceof Error ? error.message : "Unexpected error deleting post" },
-			{ status: 500 },
+			{ error: apiError.message },
+			{ status: apiError.status },
 		);
 	}
 }
