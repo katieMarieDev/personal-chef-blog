@@ -86,7 +86,10 @@ export default function BlogEditorForm({ initialPost, mode }: BlogEditorFormProp
 			});
 
 			if (!response.ok) {
-				throw new Error("Could not save post");
+				const errorPayload = (await response.json().catch(() => null)) as
+					| { error?: string }
+					| null;
+				throw new Error(errorPayload?.error || "Could not save post");
 			}
 
 			const payload = (await response.json()) as { post: BlogPost };
@@ -103,8 +106,8 @@ export default function BlogEditorForm({ initialPost, mode }: BlogEditorFormProp
 			}
 
 			router.refresh();
-		} catch {
-			setMessage("Could not save post.");
+		} catch (error) {
+			setMessage(error instanceof Error ? error.message : "Could not save post.");
 		} finally {
 			setRunningAction(null);
 		}
@@ -123,14 +126,17 @@ export default function BlogEditorForm({ initialPost, mode }: BlogEditorFormProp
 			});
 
 			if (!response.ok) {
-				throw new Error("Could not unpublish post");
+				const errorPayload = (await response.json().catch(() => null)) as
+					| { error?: string }
+					| null;
+				throw new Error(errorPayload?.error || "Could not unpublish post");
 			}
 
 			setIsPublished(false);
 			setMessage("Post unpublished. It is no longer visible publicly.");
 			router.refresh();
-		} catch {
-			setMessage("Could not unpublish post.");
+		} catch (error) {
+			setMessage(error instanceof Error ? error.message : "Could not unpublish post.");
 		} finally {
 			setRunningAction(null);
 		}
@@ -156,13 +162,16 @@ export default function BlogEditorForm({ initialPost, mode }: BlogEditorFormProp
 			});
 
 			if (!response.ok) {
-				throw new Error("Could not delete post");
+				const errorPayload = (await response.json().catch(() => null)) as
+					| { error?: string }
+					| null;
+				throw new Error(errorPayload?.error || "Could not delete post");
 			}
 
 			router.push("/blog");
 			router.refresh();
-		} catch {
-			setMessage("Could not delete post.");
+		} catch (error) {
+			setMessage(error instanceof Error ? error.message : "Could not delete post.");
 		} finally {
 			setRunningAction(null);
 		}

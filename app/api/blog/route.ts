@@ -56,59 +56,66 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-	const session = await auth0.getSession();
-	if (!isAdmin(session)) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
+	try {
+		const session = await auth0.getSession();
+		if (!isAdmin(session)) {
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
 
-	const body = (await req.json()) as {
-		title?: string;
-		excerpt?: string;
-		body?: string;
-		heroImageUrl?: string;
-		isPublished?: boolean;
-	};
+		const body = (await req.json()) as {
+			title?: string;
+			excerpt?: string;
+			body?: string;
+			heroImageUrl?: string;
+			isPublished?: boolean;
+		};
 
-	if (!body.title?.trim() || !body.body?.trim()) {
+		if (!body.title?.trim() || !body.body?.trim()) {
+			return NextResponse.json(
+				{ error: "Title and body are required" },
+				{ status: 400 },
+			);
+		}
+
+		const supabase = getSupabaseAdminClient();
+		const slug = await ensureUniqueBlogSlug(body.title);
+		const heroImageUrl = await uploadBlogImageIfNeeded(body.heroImageUrl);
+		const publishedAt = body.isPublished === false ? null : new Date().toISOString();
+		const insertPayload: Record<string, string | null> = {
+			title: body.title.trim(),
+			slug,
+			body: body.body,
+			excerpt: body.excerpt?.trim() || excerptFromBody(body.body),
+			hero_image_url: heroImageUrl,
+			published_at: publishedAt,
+		};
+
+		const { data: inserted, error } = await supabase
+			.from("blog_posts")
+			.insert(insertPayload)
+			.select("id, title, slug, body, excerpt, hero_image_url, published_at, created_at")
+			.single();
+
+		if (error) {
+			return NextResponse.json({ error: error.message }, { status: 500 });
+		}
+
+		const post = {
+			id: inserted.id,
+			slug: inserted.slug,
+			title: inserted.title,
+			excerpt: inserted.excerpt ?? "",
+			body: inserted.body ?? "",
+			heroImageUrl: inserted.hero_image_url ?? undefined,
+			publishedAt: inserted.published_at,
+			isPublished: !!inserted.published_at,
+		};
+
+		return NextResponse.json({ ok: true, post }, { status: 201 });
+	} catch (error) {
 		return NextResponse.json(
-			{ error: "Title and body are required" },
-			{ status: 400 },
+			{ error: error instanceof Error ? error.message : "Unexpected error creating post" },
+			{ status: 500 },
 		);
 	}
-
-	const supabase = getSupabaseAdminClient();
-	const slug = await ensureUniqueBlogSlug(body.title);
-	const heroImageUrl = await uploadBlogImageIfNeeded(body.heroImageUrl);
-	const publishedAt = body.isPublished === false ? null : new Date().toISOString();
-	const insertPayload: Record<string, string | null> = {
-		title: body.title.trim(),
-		slug,
-		body: body.body,
-		excerpt: body.excerpt?.trim() || excerptFromBody(body.body),
-		hero_image_url: heroImageUrl,
-		published_at: publishedAt,
-	};
-
-	const { data: inserted, error } = await supabase
-		.from("blog_posts")
-		.insert(insertPayload)
-		.select("id, title, slug, body, excerpt, hero_image_url, published_at, created_at")
-		.single();
-
-	if (error) {
-		return NextResponse.json({ error: error.message }, { status: 500 });
-	}
-
-	const post = {
-		id: inserted.id,
-		slug: inserted.slug,
-		title: inserted.title,
-		excerpt: inserted.excerpt ?? "",
-		body: inserted.body ?? "",
-		heroImageUrl: inserted.hero_image_url ?? undefined,
-		publishedAt: inserted.published_at,
-		isPublished: !!inserted.published_at,
-	};
-
-	return NextResponse.json({ ok: true, post }, { status: 201 });
 }
